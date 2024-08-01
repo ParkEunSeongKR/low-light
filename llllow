@@ -1,0 +1,58 @@
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import numpy as np
+import cv2
+
+# 데이터 전처리 함수
+def load_and_preprocess_image(path):
+    image = cv2.imread(path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = cv2.resize(image, (256, 256))
+    image = image / 255.0  # Normalize to [0, 1]
+    return image
+
+# 간단한 CNN 모델 정의
+def create_model():
+    model = models.Sequential([
+        layers.Input(shape=(256, 256, 3)),
+        layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+        layers.MaxPooling2D((2, 2), padding='same'),
+        layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
+        layers.MaxPooling2D((2, 2), padding='same'),
+        layers.Conv2D(256, (3, 3), activation='relu', padding='same'),
+        layers.MaxPooling2D((2, 2), padding='same'),
+        layers.Conv2D(512, (3, 3), activation='relu', padding='same'),
+        layers.UpSampling2D((2, 2)),
+        layers.Conv2D(256, (3, 3), activation='relu', padding='same'),
+        layers.UpSampling2D((2, 2)),
+        layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
+        layers.UpSampling2D((2, 2)),
+        layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+        layers.Conv2D(3, (3, 3), activation='sigmoid', padding='same')
+    ])
+    model.compile(optimizer='adam', loss='mean_squared_error')
+    return model
+
+# 모델 학습 및 저조도 이미지 향상
+def enhance_image(model, low_light_image):
+    enhanced_image = model.predict(np.expand_dims(low_light_image, axis=0))[0]
+    return enhanced_image
+
+# 예시
+if __name__ == "__main__":
+    # 저조도 이미지 경로
+    low_light_image_path = 'path_to_low_light_image.jpg'
+    
+    # 이미지 로드 및 전처리
+    low_light_image = load_and_preprocess_image(low_light_image_path)
+    
+    # 모델 생성 및 학습 (여기서는 이미 학습된 모델을 로드한다고 가정)
+    model = create_model()
+    # 모델 학습이 필요할 경우, 학습 데이터셋을 준비하여 model.fit() 호출 필요
+    
+    # 저조도 이미지 향상
+    enhanced_image = enhance_image(model, low_light_image)
+    
+    # 결과 이미지 저장
+    enhanced_image = (enhanced_image * 255).astype(np.uint8)
+    cv2.imwrite('enhanced_image.jpg', cv2.cvtColor(enhanced_image, cv2.COLOR_RGB2BGR))
